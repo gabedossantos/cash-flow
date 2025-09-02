@@ -20,40 +20,7 @@ function resolveHref(href: string): string {
 }
 
 export function SiteHeader() {
-  return (
-    <header className="fixed w-full top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-      <nav className="max-w-[1200px] mx-auto px-4 md:px-6 py-4">
-        <div className="flex items-center justify-between">
-          <a href="/" className="text-2xl font-display font-bold">
-            
-          </a>
-          <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={resolveHref(item.href)}
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-          {/* Simple small-screen inline nav */}
-          <div className="inline-flex md:hidden items-center gap-4">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={resolveHref(item.href)}
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      </nav>
-    </header>
-  );
+  return null;
 }
 
 export default SiteHeader;
