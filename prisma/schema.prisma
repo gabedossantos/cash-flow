@@ -1,0 +1,275 @@
+// Predictive Cash Flow Intelligence Dashboard Schema
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  // Removed custom absolute output path to allow monorepo hoisting and default client placement.
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// Business Segments/Products
+model BusinessSegment {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  description       String?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  transactions      CashTransaction[]
+  forecasts         CashFlowForecast[]
+  
+  @@map("business_segments")
+}
+
+// Cash Flow Transactions
+model CashTransaction {
+  id                String              @id @default(cuid())
+  transactionDate   DateTime
+  amount            Decimal             @db.Decimal(15, 2)
+  type              TransactionType
+  category          String
+  description       String
+  isRecurring       Boolean             @default(false)
+  recurringPattern  String?
+  
+  businessSegmentId String
+  businessSegment   BusinessSegment     @relation(fields: [businessSegmentId], references: [id])
+  
+  // Receivables/Payables tracking
+  dueDate           DateTime?
+  isPaid            Boolean             @default(false)
+  paidDate          DateTime?
+  agingDays         Int?
+  
+  // Additional metadata
+  confidence        Float?              @default(1.0)
+  tags              String[]
+  metadata          Json?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("cash_transactions")
+  @@index([transactionDate])
+  @@index([businessSegmentId])
+  @@index([type])
+}
+
+// ML-based Cash Flow Forecasts
+model CashFlowForecast {
+  id                String              @id @default(cuid())
+  forecastDate      DateTime
+  predictedAmount   Decimal             @db.Decimal(15, 2)
+  actualAmount      Decimal?            @db.Decimal(15, 2)
+
+  // Model information
+  modelType         ForecastModel
+  scenario          ScenarioType        // Added scenario field
+  confidence        Float
+  lowerBound        Decimal             @db.Decimal(15, 2)
+  upperBound        Decimal             @db.Decimal(15, 2)
+
+  businessSegmentId String?
+  businessSegment   BusinessSegment?    @relation(fields: [businessSegmentId], references: [id])
+
+  // Model parameters and metadata
+  modelParameters   Json?
+  seasonalityFactors Json?
+  macroIndicators   Json?
+
+  createdAt         DateTime            @default(now())
+  generatedAt       DateTime            @default(now())
+
+  @@map("cash_flow_forecasts")
+  @@index([forecastDate])
+  @@index([modelType])
+  @@index([scenario])
+}
+
+// Monte Carlo Simulation Results
+model SimulationResult {
+  id                String              @id @default(cuid())
+  simulationId      String
+  runNumber         Int
+  
+  // Simulation parameters
+  scenario          ScenarioType
+  timeHorizon       Int                 // months
+  numRuns           Int
+  
+  // Results for each month
+  monthlyResults    Json                // Array of monthly cash flow projections
+  
+  // Summary statistics
+  finalBalance      Decimal             @db.Decimal(15, 2)
+  minBalance        Decimal             @db.Decimal(15, 2)
+  maxBalance        Decimal             @db.Decimal(15, 2)
+  
+  // Risk metrics
+  probabilityNegative Float
+  runwayMonths      Int?
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("simulation_results")
+  @@index([simulationId])
+  @@index([scenario])
+}
+
+// Risk Alerts and Monitoring
+model RiskAlert {
+  id                String              @id @default(cuid())
+  alertType         AlertType
+  severity          AlertSeverity
+  title             String
+  description       String
+  
+  // Alert triggers
+  triggeredAt       DateTime            @default(now())
+  resolvedAt        DateTime?
+  isResolved        Boolean             @default(false)
+  
+  // Related data
+  triggeredBy       Json                // What caused the alert
+  recommendations   String[]            // Suggested actions
+  
+  // Business context
+  businessSegmentId String?
+  affectedAmount    Decimal?            @db.Decimal(15, 2)
+  
+  metadata          Json?
+  
+  @@map("risk_alerts")
+  @@index([alertType])
+  @@index([severity])
+  @@index([triggeredAt])
+}
+
+// Business Recommendations
+model BusinessRecommendation {
+  id                String              @id @default(cuid())
+  category          RecommendationType
+  priority          RecommendationPriority
+  title             String
+  description       String
+  
+  // Impact analysis
+  estimatedImpact   Decimal?            @db.Decimal(15, 2)
+  implementationCost Decimal?           @db.Decimal(15, 2)
+  timeToImplement   Int?                // days
+  
+  // Status tracking
+  status            RecommendationStatus @default(PENDING)
+  implementedAt     DateTime?
+  
+  // Analytics context
+  basedOnData       Json                // What data/analysis generated this
+  confidence        Float               @default(0.0)
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("business_recommendations")
+  @@index([category])
+  @@index([priority])
+  @@index([status])
+}
+
+// KPI Tracking
+model KPISnapshot {
+  id                String              @id @default(cuid())
+  snapshotDate      DateTime
+  
+  // Core KPIs
+  netCashFlow       Decimal             @db.Decimal(15, 2)
+  burnRate          Decimal             @db.Decimal(15, 2)
+  runwayMonths      Int?
+  workingCapitalRatio Float?
+  
+  // Additional metrics
+  totalInflow       Decimal             @db.Decimal(15, 2)
+  totalOutflow      Decimal             @db.Decimal(15, 2)
+  cashBalance       Decimal             @db.Decimal(15, 2)
+  
+  // Aging analysis
+  avgReceivableDays Float?
+  avgPayableDays    Float?
+  
+  // Growth metrics
+  monthlyGrowthRate Float?
+  
+  businessSegmentId String?
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("kpi_snapshots")
+  @@index([snapshotDate])
+  @@index([businessSegmentId])
+}
+
+// Enums
+enum TransactionType {
+  INFLOW
+  OUTFLOW
+  TRANSFER
+}
+
+enum ForecastModel {
+  PROPHET
+  ARIMA
+  REGRESSION
+  LSTM
+  ENSEMBLE
+}
+
+enum ScenarioType {
+  BASE
+  OPTIMISTIC
+  PESSIMISTIC
+  STRESS_TEST
+}
+
+enum AlertType {
+  LIQUIDITY_RISK
+  OUTFLOW_SPIKE
+  RECEIVABLE_AGING
+  PAYABLE_AGING
+  RUNWAY_WARNING
+  SEASONAL_ANOMALY
+  FORECAST_DEVIATION
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RecommendationType {
+  CREDIT_LINE
+  COLLECTION_STRATEGY
+  PAYMENT_TERMS
+  WORKING_CAPITAL
+  COST_OPTIMIZATION
+  REVENUE_ACCELERATION
+  CASH_MANAGEMENT
+}
+
+enum RecommendationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecommendationStatus {
+  PENDING
+  IN_PROGRESS
+  IMPLEMENTED
+  DISMISSED
+}
