@@ -21,10 +21,10 @@ export default function DashboardPage() {
               <p className="text-slate-600 mt-1">Forecasting and risk management dashboard</p>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                Live Data
+              <div className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-sm font-medium">
+                Sample Data
               </div>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
             </div>
           </div>
         </div>
