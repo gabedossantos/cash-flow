@@ -3,12 +3,7 @@ const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: process.env.NEXT_DIST_DIR || ".next",
-  output: process.env.NEXT_OUTPUT_MODE,
-  experimental: {
-  // When deploying this app standalone on Vercel, trace relative to the app dir
-  outputFileTracingRoot: path.join(__dirname),
-  },
+  experimental: {},
   eslint: {
     ignoreDuringBuilds: true,
   },
